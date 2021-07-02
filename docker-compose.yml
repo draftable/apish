@@ -1,0 +1,12 @@
+version: '3.9'
+services:
+  apish:
+    image: draftable/apish-v2
+    ports:
+      - 80:80/tcp         # HTTP
+      - 443:443/tcp       # HTTPS
+    volumes:
+      - draftable-apish:/srv/draftable
+      - /sys/fs/cgroup:/sys/fs/cgroup
+volumes:
+  draftable-apish:
