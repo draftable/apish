@@ -1,9 +1,9 @@
 Draftable API Self-hosted
 =========================
 
-[![docker-ver](https://img.shields.io/docker/v/draftable/apish-v2?sort=semver)](https://hub.docker.com/r/draftable/apish-v2)
-[![docker-size](https://img.shields.io/docker/image-size/draftable/apish-v2?sort=semver)](https://hub.docker.com/r/draftable/apish-v2)
-[![docker-pulls](https://img.shields.io/docker/pulls/draftable/apish-v2)](https://hub.docker.com/r/draftable/apish-v2)
+[![docker-ver](https://img.shields.io/docker/v/draftable/apish?sort=semver)](https://hub.docker.com/r/draftable/apish)
+[![docker-size](https://img.shields.io/docker/image-size/draftable/apish?sort=semver)](https://hub.docker.com/r/draftable/apish)
+[![docker-pulls](https://img.shields.io/docker/pulls/draftable/apish)](https://hub.docker.com/r/draftable/apish)
 
 [![Open in Visual Studio Code](https://open.vscode.dev/badges/open-in-vscode.svg)](https://open.vscode.dev/draftable/apish)
 

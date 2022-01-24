@@ -1,7 +1,7 @@
 version: '3.9'
 services:
   apish:
-    image: draftable/apish-v2
+    image: draftable/apish
     ports:
       - 80:80/tcp         # HTTP
       - 443:443/tcp       # HTTPS
