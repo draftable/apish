@@ -3,8 +3,16 @@ services:
   apish:
     image: draftable/apish
     ports:
-      - 80:80/tcp         # HTTP
-      - 443:443/tcp       # HTTPS
+      # HTTP
+      - target: 80
+        published: 80
+        protocol: tcp
+        mode: host
+      # HTTPS
+      - target: 443
+        published: 443
+        protocol: tcp
+        mode: host
     volumes:
       - draftable-apish:/srv/draftable
       - /sys/fs/cgroup:/sys/fs/cgroup
