@@ -1,20 +1,302 @@
-version: '3.9'
-services:
-  apish:
-    image: draftable/apish
-    ports:
-      # HTTP
-      - target: 80
-        published: 80
-        protocol: tcp
-        mode: host
-      # HTTPS
-      - target: 443
-        published: 443
-        protocol: tcp
-        mode: host
-    volumes:
-      - draftable-apish:/srv/draftable
-      - /sys/fs/cgroup:/sys/fs/cgroup
+###############################################################################
+#                  ____             __ _        _     _                       #
+#                 |  _ \ _ __ __ _ / _| |_ __ _| |__ | | ___                  #
+#                 | | | | '__/ _` | |_| __/ _` | '_ \| |/ _ \                 #
+#                 | |_| | | | (_| |  _| || (_| | |_) | |  __/                 #
+#                 |____/|_|  \__,_|_|  \__\__,_|_.__/|_|\___|                 #
+#                                                                             #
+#      _    ____ ___   ____       _  __       _               _           _   #
+#     / \  |  _ \_ _| / ___|  ___| |/ _|     | |__   ___  ___| |_ ___  __| |  #
+#    / _ \ | |_) | |  \___ \ / _ \ | |_ _____| '_ \ / _ \/ __| __/ _ \/ _` |  #
+#   / ___ \|  __/| |   ___) |  __/ |  _|_____| | | | (_) \__ \ ||  __/ (_| |  #
+#  /_/   \_\_|  |___| |____/ \___|_|_|       |_| |_|\___/|___/\__\___|\__,_|  #
+#                                                                             #
+###############################################################################
+
+###############################################################################
+###                          Configuration values                           ###
+###############################################################################
+
+x-config-variables:
+  # Draftable
+  django-secret: &django-secret ${DJANGO_SECRET_KEY:-ChangeMe123!}
+  compare-workers-count: &compare-workers-count ${COMPARE_WORKERS_COUNT:-1}
+  draftable-product-key: &draftable-product-key ${DRAFTABLE_PRODUCT_KEY:-}
+  license-file-path: &license-file-path ${LICENSE_FILE_PATH:-/srv/draftable/config/license.json}
+
+  # Load balancer
+  server-dns: &server-dns ${SERVER_DNS:-}
+  tls-cert: &tls-cert ${TLS_CERT:-}
+  tls-key: &tls-key ${TLS_KEY:-}
+  tls-ca-chain: &tls-ca-chain ${TLS_CA_CHAIN:-}
+
+  # AMQP (RabbitMQ)
+  amqp-user: &amqp-user ${AMQP_USER:-draftable}
+  amqp-pass: &amqp-pass ${AMQP_PASSWORD:-draftable}
+
+  # Database (PostgreSQL)
+  db-name: &db-name ${DB_NAME:-draftable}
+  db-user: &db-user ${DB_USER:-postgres}
+  db-pass: &db-pass ${DB_PASS:-password}
+
+###############################################################################
+###                         Configuration sections                          ###
+###############################################################################
+
+# These configuration sections are defined using YAML anchors for easy re-use
+# across containers. If you've added a new configuration value above, you'll
+# need to add it to the relevant configuration section unless you've directly
+# added it to the environment dictionary of the relevant container(s).
+x-config-sections:
+  web-common: &web-common-config
+    ENV: prod
+    APP_BASE_URL: ${APP_BASE_URL:-https://${SERVER_DNS:-localhost}}
+    DJANGO_SECRET_KEY: *django-secret
+    ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,${SERVER_DNS:-}}
+    CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-https://${SERVER_DNS:-localhost}}
+    DRAFTABLE_PRODUCT_KEY: *draftable-product-key
+    LICENSE_FILE_PATH: *license-file-path
+
+  compare: &compare-config
+    COMPARE_WORKERS_COUNT: *compare-workers-count
+    LICENSE_FILE_PATH: *license-file-path
+
+  amqp: &amqp-config
+    AMQP_HOST: ${AMQP_HOST:-rabbitmq}
+    AMQP_USER: *amqp-user
+    AMQP_PASSWORD: *amqp-pass
+
+  db: &db-config
+    DB_HOST: ${DB_HOST:-pgsql}
+    DB_USER: *db-user
+    DB_PASS: *db-pass
+    DB_NAME: *db-name
+
+  redis: &redis-config
+    REDIS_HOST: ${REDIS_HOST:-redis}
+
+###############################################################################
+###                             Docker volumes                              ###
+###############################################################################
+
 volumes:
-  draftable-apish:
+  app_data:
+  pgsql_data:
+  rabbitmq_data:
+  redis_data:
+
+###############################################################################
+###                            Docker containers                            ###
+###############################################################################
+
+services:
+  #########################
+  ### Draftable ingress ###
+  #########################
+
+  server:
+    image: draftable/apish-load-balancer:latest
+    ports:
+      - 80:80   # HTTP
+      - 443:443 # HTTPS
+    environment:
+      SERVER_DNS: *server-dns
+      TLS_CERT: *tls-cert
+      TLS_KEY: *tls-key
+      TLS_CA_CHAIN: *tls-ca-chain
+    restart: always
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://127.0.0.1/nginx-health || exit 1
+      interval: 5s
+      timeout: 3s
+      retries: 3
+    depends_on:
+      web:
+        condition: service_healthy
+
+  #####################
+  ### Draftable web ###
+  #####################
+
+  web_init:
+    image: draftable/apish-web:latest
+    volumes:
+      - app_data:/srv/draftable
+    environment:
+      APP_MODE: web_init
+      <<: [*web-common-config, *amqp-config, *db-config, *redis-config]
+    restart: 'no'
+    depends_on:
+      pgsql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  web:
+    image: draftable/apish-web:latest
+    deploy:
+      replicas: 2
+    volumes:
+      - app_data:/srv/draftable
+    environment:
+      APP_MODE: web
+      <<: [*web-common-config, *amqp-config, *db-config, *redis-config]
+    restart: always
+    healthcheck:
+      test: curl --fail http://localhost:8000/api/?healthcheck || exit 1
+      interval: 5s
+      timeout: 3s
+      retries: 2
+      start_period: 60s
+    depends_on:
+      web_init:
+        condition: service_completed_successfully
+      pgsql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  celery_worker:
+    image: draftable/apish-web:latest
+    volumes:
+      - app_data:/srv/draftable
+    environment:
+      APP_MODE: celery_worker
+      <<: [*web-common-config, *amqp-config, *db-config, *redis-config]
+    restart: always
+    healthcheck:
+      test: celery --app web.apps.base.draftacelery inspect ping || exit 1
+      interval: 15s
+      timeout: 5s
+      retries: 1
+      start_period: 30s
+    depends_on:
+      web_init:
+        condition: service_completed_successfully
+      pgsql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  celery_beat:
+    image: draftable/apish-web:latest
+    volumes:
+      - app_data:/srv/draftable
+    environment:
+      APP_MODE: celery_beat
+      <<: [*web-common-config, *amqp-config, *db-config, *redis-config]
+    restart: always
+    healthcheck:
+      test: celery --app web.apps.base.draftacelery inspect ping || exit 1
+      interval: 15s
+      timeout: 5s
+      retries: 1
+      start_period: 30s
+    depends_on:
+      web_init:
+        condition: service_completed_successfully
+      pgsql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  #########################
+  ### Draftable compare ###
+  #########################
+
+  compare:
+    image: draftable/apish-compare:latest
+    volumes:
+      - app_data:/srv/draftable
+    restart: always
+    environment:
+      <<: [*compare-config, *amqp-config, *redis-config]
+      JODCONVERTER_URL: ${JODCONVERTER_URL:-http://converter:8080/lool/convert-to/pdf}
+    healthcheck:
+      test: ps aux |grep [P]DFCompareSubprocess || exit 1
+      interval: 10s
+      timeout: 3s
+      retries: 2
+      start_period: 30s
+    depends_on:
+      converter:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  #########################
+  ### Draftable convert ###
+  #########################
+
+  converter:
+    image: draftable/apish-converter:latest
+    ports:
+      - 8080:8080
+    restart: always
+
+  ###########################
+  ### Dependency services ###
+  ###########################
+
+  pgsql:
+    image: postgres:16.8-alpine
+    user: postgres
+    volumes:
+      - pgsql_data:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_DB: *db-name
+      POSTGRES_USER: *db-user
+      POSTGRES_PASSWORD: *db-pass
+    restart: always
+    healthcheck:
+      test: pg_isready -q -d ${DB_NAME:-draftable} -U ${DB_USER:-postgres}
+      interval: 5s
+      timeout: 4s
+      retries: 10
+      start_period: 30s
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    user: rabbitmq
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    ports:
+      - 5672:5672   # AMQP
+      - 15672:15672 # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: *amqp-user
+      RABBITMQ_DEFAULT_PASS: *amqp-pass
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 5s
+      timeout: 4s
+      retries: 10
+      start_period: 30s
+
+  redis:
+    image: redis:7.4-alpine
+    user: redis
+    # Save every 60 seconds if at least 1 change was performed
+    command: redis-server --save 60 1
+    volumes:
+      - redis_data:/data
+    ports:
+      - 6379:6379
+    restart: always
+    healthcheck:
+      test: redis-cli ping
+      interval: 5s
+      timeout: 4s
+      retries: 10
