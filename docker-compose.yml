@@ -39,6 +39,9 @@ x-config-variables:
   db-user: &db-user ${DB_USER:-postgres}
   db-pass: &db-pass ${DB_PASS:-password}
 
+  # Redis (optional)
+  redis-pass: &redis-pass ${REDIS_PASSWORD:-}
+
 ###############################################################################
 ###                         Configuration sections                          ###
 ###############################################################################
@@ -74,6 +77,7 @@ x-config-sections:
 
   redis: &redis-config
     REDIS_HOST: ${REDIS_HOST:-redis}
+    REDIS_PASSWORD: *redis-pass
 
 ###############################################################################
 ###                             Docker volumes                              ###
@@ -289,14 +293,16 @@ services:
     image: redis:7.4-alpine
     user: redis
     # Save every 60 seconds if at least 1 change was performed
-    command: redis-server --save 60 1
+    command: sh -c 'redis-server --save 60 1 $${REDIS_PASSWORD:+--requirepass "$$REDIS_PASSWORD"}'
     volumes:
       - redis_data:/data
     ports:
       - 6379:6379
+    environment:
+      REDIS_PASSWORD: *redis-pass
     restart: always
     healthcheck:
-      test: redis-cli ping
+      test: sh -c 'redis-cli $${REDIS_PASSWORD:+-a "$$REDIS_PASSWORD"} ping'
       interval: 5s
       timeout: 4s
       retries: 10
