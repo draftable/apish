@@ -22,7 +22,6 @@ x-config-variables:
   django-secret: &django-secret ${DJANGO_SECRET_KEY:-ChangeMe123!}
   compare-workers-count: &compare-workers-count ${COMPARE_WORKERS_COUNT:-1}
   draftable-product-key: &draftable-product-key ${DRAFTABLE_PRODUCT_KEY:-}
-  license-file-path: &license-file-path ${LICENSE_FILE_PATH:-/srv/draftable/config/license.json}
 
   # Load balancer
   server-dns: &server-dns ${SERVER_DNS:-}
@@ -58,11 +57,11 @@ x-config-sections:
     ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,${SERVER_DNS:-}}
     CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-https://${SERVER_DNS:-localhost}}
     DRAFTABLE_PRODUCT_KEY: *draftable-product-key
-    LICENSE_FILE_PATH: *license-file-path
+    REQUIRE_HTTPS: ${REQUIRE_HTTPS:-true}
+    RUNNING_ON_AWS: ${RUNNING_ON_AWS:-false}
 
   compare: &compare-config
     COMPARE_WORKERS_COUNT: *compare-workers-count
-    LICENSE_FILE_PATH: *license-file-path
 
   amqp: &amqp-config
     AMQP_HOST: ${AMQP_HOST:-rabbitmq}
@@ -101,8 +100,8 @@ services:
   server:
     image: draftable/apish-load-balancer:latest
     ports:
-      - 80:80   # HTTP
-      - 443:443 # HTTPS
+      - ${HTTP_PORT:-80}:80   # HTTP
+      - ${HTTPS_PORT:-443}:443 # HTTPS
     environment:
       SERVER_DNS: *server-dns
       TLS_CERT: *tls-cert
@@ -132,8 +131,6 @@ services:
     restart: 'no'
     depends_on:
       pgsql:
-        condition: service_healthy
-      rabbitmq:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -246,6 +243,11 @@ services:
     image: draftable/apish-converter:latest
     ports:
       - 8080:8080
+    environment:
+      <<: [*redis-config]
+    depends_on:
+      redis:
+        condition: service_healthy
     restart: always
 
   ###########################
@@ -290,7 +292,7 @@ services:
       start_period: 30s
 
   redis:
-    image: redis:7.4-alpine
+    image: redis:8.2-alpine
     user: redis
     # Save every 60 seconds if at least 1 change was performed
     command: sh -c 'redis-server --save 60 1 $${REDIS_PASSWORD:+--requirepass "$$REDIS_PASSWORD"}'
