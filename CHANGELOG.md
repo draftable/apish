@@ -8,6 +8,9 @@ All notable changes to the Apish project components will be documented in this f
 ### apish-web:3.0.4, docker-compose.yml
 - Support for configuring S3 storage
 
+### docker-compose.yml
+- Redis improved data persistence options 
+
 ---
 ## 2025-11-26
 - Added a script and instructions for migrating from V2 APISH container

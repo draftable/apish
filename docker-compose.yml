@@ -59,6 +59,16 @@ x-config-sections:
     DRAFTABLE_PRODUCT_KEY: *draftable-product-key
     REQUIRE_HTTPS: ${REQUIRE_HTTPS:-true}
     RUNNING_ON_AWS: ${RUNNING_ON_AWS:-false}
+    FILE_STORAGE_TYPE: ${FILE_STORAGE_TYPE:-local}
+
+  aws: &aws-config
+    AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+    AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+    AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
+    AWS_S3_REGION_NAME: ${AWS_S3_REGION_NAME:-${AWS_REGION:-}}
+    AWS_REGION: ${AWS_REGION:-}
+    S3_STORAGE_BUCKET: ${S3_STORAGE_BUCKET:-}
+    COMPARE_API_CLOUDFRONT_URL: ${COMPARE_API_CLOUDFRONT_URL:-}
 
   compare: &compare-config
     COMPARE_WORKERS_COUNT: *compare-workers-count
@@ -127,7 +137,7 @@ services:
       - app_data:/srv/draftable
     environment:
       APP_MODE: web_init
-      <<: [*web-common-config, *amqp-config, *db-config, *redis-config]
+      <<: [*web-common-config, *amqp-config, *db-config, *redis-config, *aws-config]
     restart: 'no'
     depends_on:
       pgsql:
@@ -143,7 +153,7 @@ services:
       - app_data:/srv/draftable
     environment:
       APP_MODE: web
-      <<: [*web-common-config, *amqp-config, *db-config, *redis-config]
+      <<: [*web-common-config, *amqp-config, *db-config, *redis-config, *aws-config]
     restart: always
     healthcheck:
       test: curl --fail http://localhost:8000/api/?healthcheck || exit 1
@@ -167,7 +177,7 @@ services:
       - app_data:/srv/draftable
     environment:
       APP_MODE: celery_worker
-      <<: [*web-common-config, *amqp-config, *db-config, *redis-config]
+      <<: [*web-common-config, *amqp-config, *db-config, *redis-config, *aws-config]
     restart: always
     healthcheck:
       test: celery --app web.apps.base.draftacelery inspect ping || exit 1
@@ -191,7 +201,7 @@ services:
       - app_data:/srv/draftable
     environment:
       APP_MODE: celery_beat
-      <<: [*web-common-config, *amqp-config, *db-config, *redis-config]
+      <<: [*web-common-config, *amqp-config, *db-config, *redis-config, *aws-config]
     restart: always
     healthcheck:
       test: celery --app web.apps.base.draftacelery inspect ping || exit 1
@@ -219,7 +229,7 @@ services:
       - app_data:/srv/draftable
     restart: always
     environment:
-      <<: [*compare-config, *amqp-config, *redis-config]
+      <<: [*compare-config, *amqp-config, *redis-config, *aws-config]
       JODCONVERTER_URL: ${JODCONVERTER_URL:-http://converter:8080/lool/convert-to/pdf}
     healthcheck:
       test: ps aux |grep [P]DFCompareSubprocess || exit 1
@@ -294,8 +304,27 @@ services:
   redis:
     image: redis:8.2-alpine
     user: redis
-    # Save every 60 seconds if at least 1 change was performed
-    command: sh -c 'redis-server --save 60 1 $${REDIS_PASSWORD:+--requirepass "$$REDIS_PASSWORD"}'
+    # Critical data persistence configuration:
+    # - AOF (Append Only File) enabled for maximum durability
+    # - Multiple RDB snapshot points for backup persistence
+    # - Fsync every second for balance between performance and durability
+    command: >
+      sh -c 'redis-server
+      --dir /data
+      --appendonly yes
+      --appendfsync everysec
+      --auto-aof-rewrite-percentage 100
+      --auto-aof-rewrite-min-size 64mb
+      --aof-load-truncated yes
+      --no-appendfsync-on-rewrite no
+      --save 900 1
+      --save 300 10
+      --save 60 10000
+      --stop-writes-on-bgsave-error yes
+      --rdbcompression yes
+      --rdbchecksum yes
+      --maxmemory-policy noeviction
+      $${REDIS_PASSWORD:+--requirepass "$$REDIS_PASSWORD"}'
     volumes:
       - redis_data:/data
     ports:
