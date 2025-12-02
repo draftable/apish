@@ -3,16 +3,18 @@
 All notable changes to the Apish project components will be documented in this file.
 
 ---
+## 2025-02-02
+
+### apish-web:3.0.4, docker-compose.yml
+- Support for configuring S3 storage
+
+---
 ## 2025-11-26
 - Added a script and instructions for migrating from V2 APISH container
-### apish-web:3.0.3 
-- Support for installing custom fonts
-
-### apish-converter:3.0.1 
+### apish-web:3.0.3, apish-converter:3.0.1, docker-compose.yml
 - Support for installing custom fonts
 
 ### docker-compose.yml
-- Support for installing custom fonts
 - Update Redis to v8.2
 ---
 
