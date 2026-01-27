@@ -98,6 +98,7 @@ volumes:
   app_data:
   pgsql_data:
   rabbitmq_data:
+    name: draftable_rabbitmq_data_v4
   redis_data:
 
 ###############################################################################
@@ -283,13 +284,12 @@ services:
       start_period: 30s
 
   rabbitmq:
-    image: rabbitmq:3.13-management-alpine
+    image: rabbitmq:4.2-management-alpine
     user: rabbitmq
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     ports:
       - 5672:5672   # AMQP
-      - 15672:15672 # Management UI
     environment:
       RABBITMQ_DEFAULT_USER: *amqp-user
       RABBITMQ_DEFAULT_PASS: *amqp-pass

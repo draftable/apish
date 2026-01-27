@@ -3,6 +3,22 @@
 All notable changes to the Apish project components will be documented in this file.
 
 ---
+## 2026-01-27
+
+### apish-converter:3.0.2
+- Increase maximum file size limit for document conversion input files
+
+### docker-compose.yml
+- Don't expose RabbitMQ management UI by default
+- Upgrade RabbitMQ to version 4.2
+    - **Note:** Upgrading will result in loss of existing queue data. Suggested upgrade procedure:
+        1. Stop Web container
+        2. Wait until all running comparisons complete
+        3. Stop all APISH services
+        4. Replace docker-compose.yml and start all services
+
+
+---
 ## 2026-01-08
 
 ### apish-web:3.0.5
