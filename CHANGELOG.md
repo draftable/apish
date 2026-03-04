@@ -3,6 +3,20 @@
 All notable changes to the Apish project components will be documented in this file.
 
 ---
+## 2026-03-04
+
+### apish-web:3.0.6
+- Fix vulnerabilities CVE-2026-1207, CVE-2026-1287, CVE-2026-26007, CVE-2025-68973
+    - Django 5.2.10 → 5.2.11
+    - cryptography 46.0.3 → 46.0.5
+    - Upgrade gpgv
+
+### apish-compare:3.0.2
+- Resolve issue with false positive changes in tables
+
+
+
+---
 ## 2026-01-27
 
 ### apish-converter:3.0.2
