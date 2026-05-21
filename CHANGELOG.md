@@ -3,6 +3,18 @@
 All notable changes to the Apish project components will be documented in this file.
 
 ---
+## 2026-05-21
+
+### apish-web:3.0.7
+- Improve license handling:
+    - Cache license data locally for deployments using non-persistent Redis.
+    - Re-activate automatically when the license is updated on Draftable.
+- Update dependencies to address security vulnerabilities.
+
+### apish-load-balancer:3.0.3
+- Restore iframe support for embedding the comparison UI.
+
+---
 ## 2026-03-04
 
 ### apish-web:3.0.6
@@ -13,7 +25,6 @@ All notable changes to the Apish project components will be documented in this f
 
 ### apish-compare:3.0.2
 - Resolve issue with false positive changes in tables
-
 
 
 ---
