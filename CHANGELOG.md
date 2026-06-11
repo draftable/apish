@@ -3,6 +3,16 @@
 All notable changes to the Apish project components will be documented in this file.
 
 ---
+## 2026-06-11
+
+### apish-compare:3.0.3
+- Fix for TLS enabled AMQP connection
+
+### apish-converter:3.0.3
+- Fix for TLS enabled Redis connection
+
+
+---
 ## 2026-05-21
 
 ### apish-web:3.0.7
