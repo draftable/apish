@@ -3,6 +3,12 @@
 All notable changes to the Apish project components will be documented in this file.
 
 ---
+## 2026-06-24
+
+### apish-converter:3.0.4
+- Dropping gosu dependency
+
+---
 ## 2026-06-11
 
 ### apish-compare:3.0.3
