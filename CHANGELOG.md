@@ -3,6 +3,14 @@
 All notable changes to the Apish project components will be documented in this file.
 
 ---
+## 2026-07-01
+
+### apish-web:3.0.8
+- Updated the comparison viewer:
+  - Upgraded PDF.js dependency to resolve issues with PDF rendering, specifically around annotation boxes.
+  - Restored missing button styles for consistent user interface appearance.
+
+---
 ## 2026-06-24
 
 ### apish-converter:3.0.4
