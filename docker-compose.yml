@@ -185,9 +185,9 @@ services:
     restart: always
     healthcheck:
       test: celery --app web.apps.base.draftacelery inspect ping || exit 1
-      interval: 15s
-      timeout: 5s
-      retries: 1
+      interval: 30s
+      timeout: 15s
+      retries: 3
       start_period: 30s
     depends_on:
       pgsql:
@@ -206,10 +206,13 @@ services:
       <<: [*web-common-config, *amqp-config, *db-config, *redis-config, *aws-config]
     restart: always
     healthcheck:
-      test: celery --app web.apps.base.draftacelery inspect ping || exit 1
-      interval: 15s
+      # Beat is a scheduler, not a worker: it never consumes from the control
+      # mailbox, so `inspect ping` here is only ever answered by celery_worker
+      # and stays green while beat itself is dead.
+      test: pgrep -f "[c]elery.*beat" || exit 1
+      interval: 30s
       timeout: 5s
-      retries: 1
+      retries: 3
       start_period: 30s
     depends_on:
       pgsql:
@@ -251,8 +254,10 @@ services:
 
   converter:
     image: draftable/apish-converter:latest
+    # The conversion endpoint has no authentication of its own, so it must
+    # never be reachable beyond the host.
     ports:
-      - 8080:8080
+      - 127.0.0.1:8080:8080
     environment:
       <<: [*redis-config]
     depends_on:
@@ -265,12 +270,12 @@ services:
   ###########################
 
   pgsql:
-    image: postgres:16.8-alpine
+    image: postgres:16.15-alpine
     user: postgres
     volumes:
       - pgsql_data:/var/lib/postgresql/data
     ports:
-      - 5432:5432
+      - 127.0.0.1:5432:5432
     environment:
       POSTGRES_DB: *db-name
       POSTGRES_USER: *db-user
@@ -289,7 +294,7 @@ services:
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     ports:
-      - 5672:5672   # AMQP
+      - 127.0.0.1:5672:5672   # AMQP
     environment:
       RABBITMQ_DEFAULT_USER: *amqp-user
       RABBITMQ_DEFAULT_PASS: *amqp-pass
@@ -326,8 +331,10 @@ services:
       $${REDIS_PASSWORD:+--requirepass "$$REDIS_PASSWORD"}'
     volumes:
       - redis_data:/data
+    # REDIS_PASSWORD is optional, and write access here is write access to the
+    # converter's font directory, so it must never be reachable beyond the host.
     ports:
-      - 6379:6379
+      - 127.0.0.1:6379:6379
     environment:
       REDIS_PASSWORD: *redis-pass
     restart: always

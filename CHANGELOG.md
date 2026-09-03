@@ -3,6 +3,29 @@
 All notable changes to the Apish project components will be documented in this file.
 
 ---
+## 2026-09-03
+
+### apish-converter:3.0.5
+- Fix path traversal in custom font installation
+- Disable and lock LibreOffice macro execution
+- Restrict service user write access to its logs and custom fonts
+- Fix font sync removing installed fonts on transfer or Redis failure
+
+### apish-web:3.0.9
+- Reject unsafe filenames on custom font upload
+- Escape font filenames in status messages
+- Fix font management page refreshing indefinitely after a sync error
+
+### docker-compose.yml
+- Bind published ports to localhost: converter (8080), Redis (6379), PostgreSQL (5432) and RabbitMQ (5672). Web on 80/443 unchanged.
+    - **Note:** access from other hosts will stop working. Access within the stack is unaffected.
+- `REDIS_PASSWORD` is now strongly recommended: write access to Redis grants write access to the converter's font directory
+- Fix Celery beat health check reporting healthy while beat was dead
+- Relax Celery health check thresholds to avoid spurious unhealthy status
+- Update PostgreSQL to 16.15
+
+
+---
 ## 2026-07-01
 
 ### apish-web:3.0.8
