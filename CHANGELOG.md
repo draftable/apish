@@ -3,6 +3,30 @@
 All notable changes to the Apish project components will be documented in this file.
 
 ---
+## 2026-11-16
+
+### apish-web:3.0.10
+- Fix vulnerabilities in OS packages and dependencies, including CVE-2026-111497 (brotli) and CVE-2026-109518 (apt)
+    - Django 5.2.14 → 5.2.17
+    - Django REST framework 3.14.0 → 3.18.3
+    - aiohttp, Pillow, PyJWT, urllib3, requests, tornado
+- Harden MFA: limit code attempts per account and restrict activation tokens to MFA setup
+- Compress and cache static assets for faster page loads
+- Add comparison viewer 3.7.57
+
+### apish-compare:3.0.4
+- Fix vulnerabilities in OS packages and the .NET runtime, including CVE-2026-111497 (brotli)
+- Render PDF export cover pages and plain text (.txt) inputs with a new engine, replacing wkhtmltopdf
+- Update the Draftable logo on PDF export cover pages
+
+### apish-converter:3.0.6
+- Fix vulnerabilities in OS packages, including CVE-2026-111497 (brotli)
+
+### apish-load-balancer:3.0.4
+- Fix vulnerabilities in OS packages, including CVE-2026-111497 (brotli)
+- Update base image to Alpine 3.24
+
+---
 ## 2026-09-03
 
 ### apish-converter:3.0.5
