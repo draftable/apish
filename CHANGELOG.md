@@ -3,6 +3,20 @@
 All notable changes to the Apish project components will be documented in this file.
 
 ---
+## 2026-11-23
+
+### apish-compare:3.0.5
+- Fix plain text (.txt) comparisons and combined PDF exports failing with a missing libHarfBuzzSharp library
+
+### apish-converter:3.0.7
+- Fix Java vulnerabilities, including CVE-2026-114938 (OpenJDK) and critical and high CVEs in Spring, Tomcat and Jackson
+    - OpenJDK 21.0.13 → 21.0.13.1, now Ubuntu's package so vulnerability scanners can see it
+    - Spring Boot 3.4.10 → 4.1.2, Tomcat 10.1.46 → 11.0.27, jodconverter 4.4.7 → 5.1.1
+
+### apish-load-balancer:3.0.5
+- Fix vulnerabilities in nginx and OS packages, including CVE-2026-123007 and CVE-2026-118899 (nginx 1.31.8 → 1.31.9)
+
+---
 ## 2026-11-16
 
 ### apish-web:3.0.10
