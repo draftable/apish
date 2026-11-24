@@ -3,6 +3,23 @@
 All notable changes to the Apish project components will be documented in this file.
 
 ---
+## 2026-11-24
+
+### apish-web:3.0.11
+- Fix "too many clients" database outages: connections now close at the end of every request
+    - **Note:** `DB_CONN_MAX_AGE` is no longer used and can be removed from your configuration.
+- Fix uploads over 2.5 MB failing with HTTP 400 when API request logging is enabled for a credential
+- Fix nginx vulnerabilities, including CVE-2026-123007 and CVE-2026-118899 (nginx 1.24.0-2ubuntu7.19 → 1.24.0-2ubuntu7.21)
+- Upgrade Celery 5.4 → 5.7 and gevent 25.9 → 26.9
+
+### docker-compose.yml
+- Update RabbitMQ 4.2 → 4.3
+    - **Note:** requires apish-web 3.0.11 or later. Earlier versions declare queues that RabbitMQ 4.3 rejects.
+- Set a fixed RabbitMQ hostname so broker state survives container recreation
+    - **Note:** RabbitMQ starts with an empty broker on the first start after this update, and messages still queued are lost. Let running comparisons finish before you upgrade.
+    - **Note:** like PostgreSQL, RabbitMQ now keeps its user and password across restarts. To change `AMQP_PASSWORD` later, first run `docker compose exec rabbitmq rabbitmqctl change_password <user> <new-password>`.
+
+---
 ## 2026-11-23
 
 ### apish-compare:3.0.5

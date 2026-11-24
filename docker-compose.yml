@@ -289,7 +289,10 @@ services:
       start_period: 30s
 
   rabbitmq:
-    image: rabbitmq:4.2-management-alpine
+    image: rabbitmq:4.3-management-alpine
+    # RabbitMQ keeps its data under the node name (rabbit@<hostname>), so a
+    # fixed hostname keeps broker state when the container is recreated.
+    hostname: rabbitmq
     user: rabbitmq
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
